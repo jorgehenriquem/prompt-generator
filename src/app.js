@@ -1,9 +1,11 @@
 require("dotenv").config();
 const express = require("express");
 const swaggerUi = require("swagger-ui-express");
-const { createContainer, asClass } = require("awilix");
+const { createContainer, asClass, asValue } = require("awilix");
 const routes = require("./interfaces/routes");
 const HealthCheckController = require("./interfaces/controllers/HealthCheckController");
+const categoryRoutes = require("./interfaces/routes/CategoryRoutes");
+
 const app = express();
 
 app.use(express.json());
@@ -12,14 +14,15 @@ const container = createContainer();
 
 container.register({
   healthCheckController: asClass(HealthCheckController).singleton(),
+  categoryRoutes: asValue(categoryRoutes),
 });
 
-app.use("/docs", swaggerUi.serve, swaggerUi.setup(null)); //@TODO: add swagger documentation
+// app.use("/docs", swaggerUi.serve, swaggerUi.setup(null)); //@TODO: add swagger documentation
+app.use("/api", container.resolve("categoryRoutes")); // Corrigido para usar diretamente o roteador
 
-app.use("/", (req, res) =>
+app.use("/health", (req, res) =>
   container.resolve("healthCheckController").handle(req, res)
 );
-app.use("/api", routes(container));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
